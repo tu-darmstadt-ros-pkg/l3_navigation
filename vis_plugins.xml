@@ -1,0 +1,7 @@
+<library path="lib/libl3_navigation">
+  <class name="nav_goal_marker_vis" type="l3_navigation::NavGoalMarkerVis" base_class_type="l3_footstep_planning::PlanningVisPlugin">
+    <description>
+      NavGoalMarkerVis: Interactive marker for guiding a robot to goal
+    </description>
+  </class>
+</library>
