@@ -53,7 +53,7 @@ public:
 
   typedef boost::function<void(const geometry_msgs::Pose& pose)> PoseUpdateCB;
 
-  NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, const std::string& nav_frame, const l3::RobotDescription& robot_description, double marker_scale = 1.0,
+  NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, const std::string& nav_frame, const l3::RobotDescription& robot_description, double marker_scaling = 1.0,
                 const Transform& center_to_base = Transform());
   virtual ~NavGoalMarker();
 

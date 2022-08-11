@@ -36,21 +36,25 @@ bool NavGoalMarkerVis::initialize(const vigir_generic_params::ParameterSet& para
   const std::string& marker_topic = param("marker_topic", std::string("nav_goal"), true);
   const std::string& step_controller_topic = param("step_controller_topic", std::string("execute_step_plan"), true);
 
-  double scale = params.param("scale", 1.0, true);
+  double scaling = param("scaling", 1.0, true);
+  double marker_offset_z = param("marker_offset_z", 0.0, true);
 
   auto_planning_ = param("auto_planning", true, true);
 
   planning_horizon_ = param("planning_horizon", 1.0, true);
   max_planning_time_ = param("max_planning_time", 2.0, true);
 
+  // determine center to base
   Transform center_to_base;
   if (RobotModel::kinematics())
     center_to_base = RobotModel::kinematics()->calcStaticFeetCenterToBase(*RobotModel::description());
   else
     center_to_base.setZ(0.5 * RobotModel::description()->getBaseInfo(BaseInfo::MAIN_BODY_IDX).size.x());
 
+  center_to_base.setZ(center_to_base.z() + marker_offset_z);
+
   // init marker
-  nav_goal_marker_.reset(new NavGoalMarker(nh_, marker_topic, nav_frame_, *RobotModel::description(), scale, center_to_base));
+  nav_goal_marker_.reset(new NavGoalMarker(nh_, marker_topic, nav_frame_, *RobotModel::description(), scaling, center_to_base));
   nav_goal_marker_->setPoseUpdateCallback(boost::bind(&NavGoalMarkerVis::processMarkerPoseUpdate, this, _1));
 
   // init marker menu

@@ -18,7 +18,7 @@ using namespace interactive_markers;
 using namespace l3;
 using namespace l3_footstep_planning;
 
-NavGoalMarker::NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, const std::string& nav_frame, const l3::RobotDescription& robot_description, double marker_scale,
+NavGoalMarker::NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, const std::string& nav_frame, const l3::RobotDescription& robot_description, double marker_scaling,
                              const Transform& center_to_base)
   : robot_description_(robot_description)
   , nav_frame_(nav_frame)
@@ -29,7 +29,7 @@ NavGoalMarker::NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, cons
   visualization_msgs::InteractiveMarker int_marker;
   int_marker.header.frame_id = nav_frame_;
   int_marker.pose.orientation.w = 1.0;
-  int_marker.scale = marker_scale;
+  int_marker.scale = marker_scaling;
   int_marker.name = INT_MARKER_NAME;
 
   visualization_msgs::InteractiveMarkerControl control;
@@ -45,9 +45,9 @@ NavGoalMarker::NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, cons
   {
     marker.type = visualization_msgs::Marker::CUBE;
     poseL3ToMsg(center_to_base, marker.pose);
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 0.1;
+    marker.scale.x = 0.1 * marker_scaling;
+    marker.scale.y = 0.1 * marker_scaling;
+    marker.scale.z = 0.1 * marker_scaling;
   }
   else
   {
