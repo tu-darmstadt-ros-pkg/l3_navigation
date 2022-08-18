@@ -146,7 +146,7 @@ void NavGoalMarkerVis::update(const ros::TimerEvent& /*event*/)
     Step::ConstPtr step = step_plan_.getStep(feedback.first_changeable_step_idx, max_planning_time_);
     if (step)
     {
-      footholdArrayL3ToMsg(step->getFootholds(), start_footholds);
+      footholdArrayL3ToMsg(step->getAllFootholds(), start_footholds);
       start_step_idx = step->getStepIndex();
     }
     else
@@ -322,7 +322,7 @@ void NavGoalMarkerVis::stepPlanResultCB(const l3_footstep_planning_msgs::StepPla
     Step::ConstPtr step = temp.getfirstStep();
 
     ROS_DEBUG("[NavGoalMarkerVis] Received step plan starting with idx %u", step->getStepIndex());
-    for (Foothold::ConstPtr f : step->getFootholds())
+    for (Foothold::ConstPtr f : step->getAllFootholds())
       ROS_DEBUG("[NavGoalMarkerVis] [%u] %.3f / %.3f", f->idx, f->x(), f->y());
 
     step_plan_.stitchStepPlan(result->step_plan);
