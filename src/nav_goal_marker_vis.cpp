@@ -40,6 +40,7 @@ bool NavGoalMarkerVis::initialize(const vigir_generic_params::ParameterSet& para
   double marker_offset_z = param("marker_offset_z", 0.0, true);
 
   auto_planning_ = param("auto_planning", true, true);
+  auto_execute_ = param("auto_execute", false, true);
 
   planning_horizon_ = param("planning_horizon", 1.0, true);
   max_planning_time_ = param("max_planning_time", 2.0, true);
@@ -60,6 +61,7 @@ bool NavGoalMarkerVis::initialize(const vigir_generic_params::ParameterSet& para
   // init marker menu
   nav_goal_marker_->insertMenuItem("Generate Plan", boost::bind(&NavGoalMarkerVis::sendStepPlanRequestCB, this));
   nav_goal_marker_->insertCheckableMenuItem("Auto Generate Plan", auto_planning_, [this](bool checked) { auto_planning_ = checked; });
+  nav_goal_marker_->insertCheckableMenuItem("Auto Execute Plan", auto_execute_, [this](bool checked) { auto_execute_ = checked; });
   nav_goal_marker_->insertMenuItem("Execute", [this](const MenuHandler::FeedbackConstPtr&) { step_controller_->execute(step_plan_.toMsg()); });
   nav_goal_marker_->insertMenuItem("Start Nav Goal", boost::bind(&NavGoalMarkerVis::startNavGoalCB, this));
   nav_goal_marker_->insertMenuItem("Stop Nav Goal", boost::bind(&NavGoalMarkerVis::stopNavGoalCB, this));
@@ -339,6 +341,10 @@ void NavGoalMarkerVis::stepPlanResultCB(const l3_footstep_planning_msgs::StepPla
 
   // publish plan
   publishCurrentStepPlan();
+
+  // auto execute step plan
+ if (auto_execute_)
+   step_controller_->execute(result->step_plan);
 }
 }  // namespace l3_navigation
 

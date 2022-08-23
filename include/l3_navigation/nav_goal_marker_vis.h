@@ -80,7 +80,8 @@ protected:
   StepControllerInterface::Ptr step_controller_;
 
   // internal state
-  bool auto_planning_;
+  bool auto_planning_ = false;
+  bool auto_execute_ = false;
   bool nav_goal_running_;
   bool nav_goal_reached_;
   StepIndex currently_executed_step_index_;
