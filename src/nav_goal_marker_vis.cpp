@@ -282,7 +282,16 @@ void NavGoalMarkerVis::publishStepExecution()
 void NavGoalMarkerVis::sendStepPlanRequestCB()
 {
   if (!nav_goal_running_)
-    sendStepPlanRequest(l3_msgs::FootholdArray(), nav_goal_marker_->getFootholds());
+  {
+    std_msgs::Header header;
+    header.frame_id = nav_frame_;
+    header.stamp = ros::Time::now();
+
+    l3_msgs::FootholdArray start_footholds;
+    l3_footstep_planning::determineStartFootholds(start_footholds, generate_feet_pose_client_, header);
+
+    sendStepPlanRequest(start_footholds, nav_goal_marker_->getFootholds());
+  }
 }
 
 void NavGoalMarkerVis::startNavGoalCB()
