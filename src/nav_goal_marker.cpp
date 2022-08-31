@@ -251,10 +251,11 @@ void NavGoalMarker::processFeedback(const visualization_msgs::InteractiveMarkerF
 
   geometry_msgs::Pose pose_msg = feedback->pose;
 
-  // get height from footstep planner
+  // get feet height from footstep planner
   l3_footstep_planning_msgs::UpdateFeetServiceRequest req;
   l3_footstep_planning_msgs::UpdateFeetServiceResponse resp;
 
+  // only update central marker position when marker is not dragged
   if (!isMoving())
   {
     l3_msgs::Foothold foothold;
@@ -269,11 +270,9 @@ void NavGoalMarker::processFeedback(const visualization_msgs::InteractiveMarkerF
       pose_msg = resp.feet.front().pose;
     else
       ROS_ERROR("Could not call UpdateFeet service!");
-  }
 
-  // update marker pose
-  pose_.header = feedback->header;
-  pose_.pose = pose_msg;
+    setPose(pose_msg, feedback->header);
+  }
 
   // updating feet pose
   req.feet.clear();
