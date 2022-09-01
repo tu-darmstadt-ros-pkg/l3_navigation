@@ -59,12 +59,12 @@ bool NavGoalMarkerVis::initialize(const vigir_generic_params::ParameterSet& para
   nav_goal_marker_->setPoseUpdateCallback(boost::bind(&NavGoalMarkerVis::processMarkerPoseUpdate, this, _1));
 
   // init marker menu
-  nav_goal_marker_->insertMenuItem("Generate Plan", boost::bind(&NavGoalMarkerVis::sendStepPlanRequestCB, this));
+  nav_goal_marker_->insertMenuItem("Generate Plan", boost::bind(&NavGoalMarkerVis::sendStepPlanRequestCb, this));
   nav_goal_marker_->insertCheckableMenuItem("Auto Generate Plan", auto_planning_, [this](bool checked) { auto_planning_ = checked; });
   nav_goal_marker_->insertCheckableMenuItem("Auto Execute Plan", auto_execute_, [this](bool checked) { auto_execute_ = checked; });
   nav_goal_marker_->insertMenuItem("Execute", [this](const MenuHandler::FeedbackConstPtr&) { step_controller_->execute(step_plan_.toMsg()); });
-  nav_goal_marker_->insertMenuItem("Start Nav Goal", boost::bind(&NavGoalMarkerVis::startNavGoalCB, this));
-  nav_goal_marker_->insertMenuItem("Stop Nav Goal", boost::bind(&NavGoalMarkerVis::stopNavGoalCB, this));
+  nav_goal_marker_->insertMenuItem("Start Nav Goal", boost::bind(&NavGoalMarkerVis::startNavGoalCb, this));
+  nav_goal_marker_->insertMenuItem("Stop Nav Goal", boost::bind(&NavGoalMarkerVis::stopNavGoalCb, this));
 
   // init step controller
   step_controller_.reset(new StepControllerInterface(nh_, step_controller_topic));
@@ -113,6 +113,7 @@ void NavGoalMarkerVis::resetStepPlan()
 
 void NavGoalMarkerVis::update(const ros::TimerEvent& /*event*/)
 {
+  // do nothing when no continuous walking is enabled
   if (!nav_goal_running_)
     return;
 
@@ -154,7 +155,7 @@ void NavGoalMarkerVis::update(const ros::TimerEvent& /*event*/)
     else
     {
       ROS_ERROR("[NavGoalMarkerVis] Ran out of steps...aborting!");
-      stopNavGoalCB();
+      stopNavGoalCb();
       return;
     }
   }
@@ -208,7 +209,7 @@ void NavGoalMarkerVis::update(const ros::TimerEvent& /*event*/)
 void NavGoalMarkerVis::processMarkerPoseUpdate(const geometry_msgs::Pose& pose)
 {
   if (auto_planning_)
-    sendStepPlanRequestCB();
+    sendStepPlanRequestCb();
 }
 
 void NavGoalMarkerVis::processStepContollerFeedback(const l3_footstep_planning_msgs::ExecuteStepPlanFeedback& feedback)
@@ -228,7 +229,7 @@ void NavGoalMarkerVis::sendStepPlanRequest(const l3_msgs::FootholdArray& start_f
   request.plan_request.max_planning_time = max_planning_time;
   request.plan_request.start_footholds = start_footholds;
   request.plan_request.goal_footholds = goal_footholds;
-  step_plan_request_ac_->sendGoal(request, boost::bind(&NavGoalMarkerVis::stepPlanResultCB, this, _2));
+  step_plan_request_ac_->sendGoal(request, boost::bind(&NavGoalMarkerVis::stepPlanResultCb, this, _2));
 
   ROS_DEBUG("[NavGoalMarkerVis] Request Start with idx %u", request.plan_request.start_step_idx);
   for (const l3_msgs::Foothold& f : request.plan_request.start_footholds)
@@ -279,7 +280,7 @@ void NavGoalMarkerVis::publishStepExecution()
   removeDeletedMarkers(step_execute_markers_);
 }
 
-void NavGoalMarkerVis::sendStepPlanRequestCB()
+void NavGoalMarkerVis::sendStepPlanRequestCb()
 {
   if (!nav_goal_running_)
   {
@@ -294,7 +295,7 @@ void NavGoalMarkerVis::sendStepPlanRequestCB()
   }
 }
 
-void NavGoalMarkerVis::startNavGoalCB()
+void NavGoalMarkerVis::startNavGoalCb()
 {
   ROS_INFO("[NavGoalMarkerVis] Starting nav goal...");
 
@@ -303,13 +304,13 @@ void NavGoalMarkerVis::startNavGoalCB()
   nav_goal_running_ = true;
 }
 
-void NavGoalMarkerVis::stopNavGoalCB()
+void NavGoalMarkerVis::stopNavGoalCb()
 {
   ROS_INFO("[NavGoalMarkerVis] Stopping nav goal...");
   resetStepPlan();
 }
 
-void NavGoalMarkerVis::stepPlanResultCB(const l3_footstep_planning_msgs::StepPlanRequestResultConstPtr& result)
+void NavGoalMarkerVis::stepPlanResultCb(const l3_footstep_planning_msgs::StepPlanRequestResultConstPtr& result)
 {
   if (hasError(result->status))
   {

@@ -65,13 +65,13 @@ protected:
   void publishStepExecution();
 
   // callbacks from menu
-  void sendStepPlanRequestCB();
-  void startNavGoalCB();
+  void sendStepPlanRequestCb();
+  void startNavGoalCb();
 
-  void stopNavGoalCB();
+  void stopNavGoalCb();
 
   // action client callbacks
-  void stepPlanResultCB(const l3_footstep_planning_msgs::StepPlanRequestResultConstPtr& result);
+  void stepPlanResultCb(const l3_footstep_planning_msgs::StepPlanRequestResultConstPtr& result);
 
   // interactive marker
   NavGoalMarker::Ptr nav_goal_marker_;
