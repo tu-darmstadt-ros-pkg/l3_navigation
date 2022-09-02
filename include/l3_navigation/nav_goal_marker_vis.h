@@ -65,6 +65,7 @@ protected:
   void publishStepExecution();
 
   // callbacks from menu
+  void snapToRobotCb();
   void sendStepPlanRequestCb();
   void startNavGoalCb();
 

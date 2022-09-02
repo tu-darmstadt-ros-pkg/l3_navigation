@@ -59,6 +59,7 @@ bool NavGoalMarkerVis::initialize(const vigir_generic_params::ParameterSet& para
   nav_goal_marker_->setPoseUpdateCallback(boost::bind(&NavGoalMarkerVis::processMarkerPoseUpdate, this, _1));
 
   // init marker menu
+  nav_goal_marker_->insertMenuItem("Snap to Robot", boost::bind(&NavGoalMarkerVis::snapToRobotCb, this));
   nav_goal_marker_->insertMenuItem("Generate Plan", boost::bind(&NavGoalMarkerVis::sendStepPlanRequestCb, this));
   nav_goal_marker_->insertCheckableMenuItem("Auto Generate Plan", auto_planning_, [this](bool checked) { auto_planning_ = checked; });
   nav_goal_marker_->insertCheckableMenuItem("Auto Execute Plan", auto_execute_, [this](bool checked) { auto_execute_ = checked; });
@@ -280,6 +281,24 @@ void NavGoalMarkerVis::publishStepExecution()
   removeDeletedMarkers(step_execute_markers_);
 }
 
+void NavGoalMarkerVis::snapToRobotCb()
+{
+  std_msgs::Header header;
+  header.frame_id = nav_frame_;
+  header.stamp = ros::Time::now();
+
+  msgs::FootholdArray start_footholds_msg;
+  l3_footstep_planning::determineStartFootholds(start_footholds_msg, generate_feet_pose_client_, header);
+
+  l3::FootholdArray start_footholds;
+  l3::footholdArrayMsgToL3(start_footholds_msg, start_footholds);
+
+  geometry_msgs::Pose pose;
+  l3::poseL3ToMsg(RobotModel::calcFeetCenter(start_footholds), pose);
+
+  nav_goal_marker_->setPose(pose, header);
+}
+
 void NavGoalMarkerVis::sendStepPlanRequestCb()
 {
   if (!nav_goal_running_)
@@ -288,7 +307,7 @@ void NavGoalMarkerVis::sendStepPlanRequestCb()
     header.frame_id = nav_frame_;
     header.stamp = ros::Time::now();
 
-    l3_msgs::FootholdArray start_footholds;
+    msgs::FootholdArray start_footholds;
     l3_footstep_planning::determineStartFootholds(start_footholds, generate_feet_pose_client_, header);
 
     sendStepPlanRequest(start_footholds, nav_goal_marker_->getFootholds());
