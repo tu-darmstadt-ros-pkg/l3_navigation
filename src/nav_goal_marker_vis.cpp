@@ -48,7 +48,7 @@ bool NavGoalMarkerVis::initialize(const vigir_generic_params::ParameterSet& para
   // determine center to base
   Transform center_to_base;
   if (RobotModel::kinematics())
-    center_to_base = RobotModel::kinematics()->calcStaticFeetCenterToBase(*RobotModel::description());
+    center_to_base = RobotModel::kinematics()->calcStaticFeetCenterToBase();
   else
     center_to_base.setZ(0.5 * RobotModel::description()->getBaseInfo(BaseInfo::MAIN_BODY_IDX).size.x());
 
