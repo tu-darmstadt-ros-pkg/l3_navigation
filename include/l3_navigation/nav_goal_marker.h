@@ -35,7 +35,7 @@
 #include <interactive_markers/interactive_marker_server.h>
 #include <interactive_markers/menu_handler.h>
 
-#include <l3_libs/robot_description/robot_description.h>
+#include <l3_footstep_planning_tools/feet_pose_generator_client.h>
 
 #define INT_MARKER_NAME "l3_nav_goal"
 
@@ -53,8 +53,7 @@ public:
 
   typedef boost::function<void(const geometry_msgs::Pose& pose)> PoseUpdateCB;
 
-  NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, const std::string& nav_frame, const l3::RobotDescription& robot_description, double marker_scaling = 1.0,
-                const Transform& center_to_base = Transform());
+  NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, const std::string& nav_frame, double marker_scaling = 1.0, const Transform& center_to_base = Transform());
   virtual ~NavGoalMarker();
 
   inline void setPoseUpdateCallback(const PoseUpdateCB& callback) { pose_update_cb_ = callback; }
@@ -128,13 +127,13 @@ protected:
 
   void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr feedback);
 
-  // parameters
-  const l3::RobotDescription& robot_description_;
-
   std::string nav_frame_;
 
   // ui elements
   l3::SharedPtr<InteractiveMarkerServer> server_;
+
+  // feet pose generator
+  l3_footstep_planning::FeetPoseGeneratorClient::Ptr feet_pose_generator_;
 
   MenuHandler menu_handler_;
 

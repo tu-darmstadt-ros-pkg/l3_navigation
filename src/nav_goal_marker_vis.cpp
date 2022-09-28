@@ -9,7 +9,6 @@
 #include <l3_footstep_planning_msgs/StepPlanRequestResult.h>
 
 #include <l3_footstep_planning_tools/foot_pose_transformer.h>
-#include <l3_footstep_planning_tools/feet_pose_generator.h>
 
 #include <l3_footstep_planning_vis_tools/visualization.h>
 
@@ -31,6 +30,8 @@ bool NavGoalMarkerVis::initialize(const vigir_generic_params::ParameterSet& para
     return false;
 
   // load parameters
+  base_idx_ = param("base_idx", BaseInfo::MAIN_BODY_IDX, true);
+
   nav_frame_ = param("frame", std::string("odom"), true);
 
   const std::string& marker_topic = param("marker_topic", std::string("nav_goal"), true);
@@ -55,7 +56,7 @@ bool NavGoalMarkerVis::initialize(const vigir_generic_params::ParameterSet& para
   center_to_base.setZ(center_to_base.z() + marker_offset_z);
 
   // init marker
-  nav_goal_marker_.reset(new NavGoalMarker(nh_, marker_topic, nav_frame_, *RobotModel::description(), scaling, center_to_base));
+  nav_goal_marker_.reset(new NavGoalMarker(nh_, marker_topic, nav_frame_, scaling, center_to_base));
   nav_goal_marker_->setPoseUpdateCallback(boost::bind(&NavGoalMarkerVis::processMarkerPoseUpdate, this, _1));
 
   // init marker menu
@@ -71,12 +72,14 @@ bool NavGoalMarkerVis::initialize(const vigir_generic_params::ParameterSet& para
   step_controller_.reset(new StepControllerInterface(nh_, step_controller_topic));
   step_controller_->setFeedbackCallback(boost::bind(&NavGoalMarkerVis::processStepContollerFeedback, this, _1));
 
+  // init feet pose generator
+  feet_pose_generator_ = makeShared<FeetPoseGeneratorClient>(nh_);
+
   // publisher
   step_plan_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("vis/nav_step_plan", 1, true);
   step_execution_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("vis/exe_step_plan", 1, true);
 
   // service clients
-  generate_feet_pose_client_ = nh_.serviceClient<l3_footstep_planning_msgs::GenerateFeetPoseService>("generate_feet_pose");
   update_feet_client_ = nh_.serviceClient<l3_footstep_planning_msgs::UpdateFeetService>("update_feet");
 
   // action clients
@@ -138,7 +141,7 @@ void NavGoalMarkerVis::update(const ros::TimerEvent& /*event*/)
   if (step_plan_.empty())
   {
     ROS_INFO("Starting from scratch...");
-    l3_footstep_planning::determineStartFootholds(start_footholds, generate_feet_pose_client_, header);
+    feet_pose_generator_->getStartFootholds(start_footholds, header.frame_id);
   }
   // continue execution
   else
@@ -181,7 +184,7 @@ void NavGoalMarkerVis::update(const ros::TimerEvent& /*event*/)
   else
     nav_goal_reached_ = true;
 
-  footholdArrayL3ToMsg(RobotModel::getNeutralStance(goal_pose), goal_footholds);
+  feet_pose_generator_->getFootholds(goal_footholds, goal_pose, header.frame_id);
   FootPoseTransformer::transformToRobotFrame(goal_footholds);
 
   /// align target feet to terrain
@@ -287,11 +290,8 @@ void NavGoalMarkerVis::snapToRobotCb()
   header.frame_id = nav_frame_;
   header.stamp = ros::Time::now();
 
-  msgs::FootholdArray start_footholds_msg;
-  l3_footstep_planning::determineStartFootholds(start_footholds_msg, generate_feet_pose_client_, header);
-
   l3::FootholdArray start_footholds;
-  l3::footholdArrayMsgToL3(start_footholds_msg, start_footholds);
+  feet_pose_generator_->getStartFootholds(start_footholds, header.frame_id);
 
   geometry_msgs::Pose pose;
   l3::poseL3ToMsg(RobotModel::calcFeetCenter(start_footholds), pose);
@@ -308,7 +308,7 @@ void NavGoalMarkerVis::sendStepPlanRequestCb()
     header.stamp = ros::Time::now();
 
     msgs::FootholdArray start_footholds;
-    l3_footstep_planning::determineStartFootholds(start_footholds, generate_feet_pose_client_, header);
+    feet_pose_generator_->getStartFootholds(start_footholds, header.frame_id);
 
     sendStepPlanRequest(start_footholds, nav_goal_marker_->getFootholds());
   }

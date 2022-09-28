@@ -34,9 +34,9 @@
 #include <l3_navigation/nav_goal_marker.h>
 #include <l3_navigation/step_controller_interface.h>
 
-#include <l3_libs/helper.h>
-
 #include <l3_footstep_planning_msgs/StepPlanRequestAction.h>
+
+#include <l3_footstep_planning_tools/feet_pose_generator_client.h>
 
 namespace l3_navigation
 {
@@ -80,6 +80,9 @@ protected:
   // step controller interface
   StepControllerInterface::Ptr step_controller_;
 
+  // feet pose generator
+  FeetPoseGeneratorClient::Ptr feet_pose_generator_;
+
   // internal state
   bool auto_planning_ = false;
   bool auto_execute_ = false;
@@ -95,6 +98,7 @@ protected:
   visualization_msgs::MarkerArray step_execute_markers_;
 
   // parameters
+  BaseIndex base_idx_;
   std::string nav_frame_;
   double planning_horizon_;   // distance to plan
   double max_planning_time_;  // maximal allocated planning time
@@ -104,7 +108,6 @@ protected:
   ros::Publisher step_execution_pub_;
 
   // service clients
-  ros::ServiceClient generate_feet_pose_client_;
   ros::ServiceClient update_feet_client_;
 
   // action clients

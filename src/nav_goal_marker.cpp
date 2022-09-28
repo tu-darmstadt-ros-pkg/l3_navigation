@@ -10,6 +10,7 @@
 #include <l3_footstep_planning_msgs/UpdateMode.h>
 #include <l3_footstep_planning_msgs/UpdateFeetService.h>
 
+#include <l3_footstep_planning_tools/feet_pose_generator.h>
 #include <l3_footstep_planning_tools/foot_pose_transformer.h>
 
 namespace l3_navigation
@@ -18,13 +19,14 @@ using namespace interactive_markers;
 using namespace l3;
 using namespace l3_footstep_planning;
 
-NavGoalMarker::NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, const std::string& nav_frame, const l3::RobotDescription& robot_description, double marker_scaling,
-                             const Transform& center_to_base)
-  : robot_description_(robot_description)
-  , nav_frame_(nav_frame)
+NavGoalMarker::NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, const std::string& nav_frame, double marker_scaling, const Transform& center_to_base)
+  : nav_frame_(nav_frame)
   , is_moving_(false)
 {
   server_.reset(new InteractiveMarkerServer(topic, "", false));
+
+  // init feet pose generator
+  feet_pose_generator_ = l3::makeShared<l3_footstep_planning::FeetPoseGeneratorClient>(nh);
 
   visualization_msgs::InteractiveMarker int_marker;
   int_marker.header.frame_id = nav_frame_;
@@ -36,7 +38,7 @@ NavGoalMarker::NavGoalMarker(ros::NodeHandle& nh, const std::string& topic, cons
   control.always_visible = true;
 
   /// init base marker
-  const BaseInfo& base_info = robot_description_.getBaseInfo(BaseInfo::MAIN_BODY_IDX);
+  const BaseInfo& base_info = RobotModel::description()->getBaseInfo(BaseInfo::MAIN_BODY_IDX);
 
   visualization_msgs::Marker marker;
   marker.color = base_info.color;
@@ -197,7 +199,7 @@ void NavGoalMarker::addFootholdMarkers()
 {
   footholds_.clear();
 
-  for (const FootInfoPair& p : robot_description_.getFootInfoMap())
+  for (const FootInfoPair& p : RobotModel::description()->getFootInfoMap())
   {
     const FootInfo& foot_info = p.second;
 
@@ -205,7 +207,7 @@ void NavGoalMarker::addFootholdMarkers()
     Foothold foothold(foot_info.idx, Pose());
     l3_msgs::Foothold foothold_msg = foothold.toMsg();
     FootPoseTransformer::transformToPlannerFrame(foothold_msg);
-    visualization_msgs::Marker marker = footToFootMarker(foothold.toMsg(), robot_description_);
+    visualization_msgs::Marker marker = footToFootMarker(foothold.toMsg(), *RobotModel::description());
 
     // create interactive marker
     visualization_msgs::InteractiveMarkerControl control;
@@ -232,7 +234,7 @@ void NavGoalMarker::updateFootholdMarkers(const l3_msgs::FootholdArray& foothold
 
   for (const l3_msgs::Foothold& f : footholds)
   {
-    server_->setPose(robot_description_.footId(f.idx), f.pose);
+    server_->setPose(RobotModel::description()->footId(f.idx), f.pose);
     footholds_.push_back(f);
   }
 
@@ -275,20 +277,21 @@ void NavGoalMarker::processFeedback(const visualization_msgs::InteractiveMarkerF
   }
 
   // updating feet pose
-  req.feet.clear();
   Pose pose_l3;
   poseMsgToL3(pose_msg, pose_l3);
-  footholdArrayL3ToMsg(robot_description_.getNeutralStance(pose_l3), req.feet);
+  l3_msgs::FootholdArray footholds;
 
-  for (l3_msgs::Foothold& f : req.feet)
-    f.header = feedback->header;
-
-  req.update_mode.mode = l3_footstep_planning_msgs::UpdateMode::UPDATE_MODE_3D | l3_footstep_planning_msgs::UpdateMode::UPDATE_MODE_MOVE_TO_VALID;
-
-  if (update_feet_client_.call(req, resp))
-    updateFootholdMarkers(resp.feet);
+  if (hasError(feet_pose_generator_->getFootholds(footholds, pose_l3, feedback->header.frame_id)))
+    ROS_ERROR("Could not determine marker footholds!");
   else
-    ROS_ERROR("Could not call UpdateFeet service!");
+  {
+    /// @todo Reconsider UPDATE_MODE_MOVE_TO_VALID / Maybe as function of feet pose generator^
+    // req.update_mode.mode = l3_footstep_planning_msgs::UpdateMode::UPDATE_MODE_3D | l3_footstep_planning_msgs::UpdateMode::UPDATE_MODE_MOVE_TO_VALID;
+    // if (update_feet_client_.call(req, resp))
+    //   updateFootholdMarkers(resp.feet);
+
+    updateFootholdMarkers(footholds);
+  }
 
   if (!isMoving() && pose_update_cb_)
   {
