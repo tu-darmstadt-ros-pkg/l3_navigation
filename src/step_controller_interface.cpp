@@ -1,5 +1,7 @@
 #include <l3_navigation/step_controller_interface.h>
 
+#include <l3_step_controller_plugins/base/step_controller_plugin.h>
+
 namespace l3_navigation
 {
 using namespace l3;
@@ -45,6 +47,7 @@ void StepControllerInterface::stepControllerResultCB(const l3_footstep_planning_
 {
   feedback_.currently_executing_step_idx = -1;
 
-  ROS_INFO("[StepControllerInterface] Step execution finished with code '%u'.", result->controller_state);
+  ROS_INFO("[StepControllerInterface] Step execution finished with state '%s'.",
+           l3_step_controller::toString(static_cast<l3_step_controller::StepControllerState>(result->controller_state)).c_str());
 }
 }  // namespace l3_navigation

@@ -100,8 +100,8 @@ protected:
   // parameters
   BaseIndex base_idx_;
   std::string nav_frame_;
-  double planning_horizon_;   // distance to plan
-  double max_planning_time_;  // maximal allocated planning time
+  double planning_horizon_;   // distance to plan [m]
+  double max_planning_time_;  // maximal allocated planning time [s]
 
   // publisher
   ros::Publisher step_plan_pub_;
